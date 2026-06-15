@@ -1,0 +1,20 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import './socket.js';
+import Home from './pages/Home.jsx';
+import LeagueMenu from './pages/LeagueMenu.jsx';
+import Scoreboard from './pages/Scoreboard.jsx';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/league" element={<LeagueMenu />} />
+        <Route path="/scoreboard" element={<Scoreboard />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
