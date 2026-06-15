@@ -1,9 +1,43 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const ICON_SIZE = 160;
+
+function IconButton({ children, label, onClick }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', userSelect: 'none' }}>
+      <button
+        onClick={onClick}
+        style={{
+          width: ICON_SIZE,
+          height: ICON_SIZE,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          background: 'var(--color-icon-bg)',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        {children}
+      </button>
+      <span style={{
+        color: 'var(--color-text-primary)',
+        fontSize: '1rem',
+        fontWeight: 700,
+      }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
 function Home() {
   const navigate = useNavigate();
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -13,53 +47,23 @@ function Home() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
-      gap: '16px',
+      gap: '40px',
     }}>
       <h1 style={{
         color: 'var(--color-primary)',
         fontSize: '2rem',
         fontWeight: 800,
-        margin: '0 0 24px',
+        margin: 0,
         letterSpacing: '-0.5px',
       }}>
         TT League
       </h1>
-
-      <button
-        onClick={() => navigate('/league')}
-        style={{
-          width: '100%',
-          maxWidth: '320px',
-          padding: '20px',
-          background: 'var(--color-primary)',
-          color: 'var(--color-surface)',
-          border: 'none',
-          borderRadius: '14px',
-          fontSize: '1.1rem',
-          fontWeight: 700,
-          cursor: 'pointer',
-        }}
-      >
-        League
-      </button>
-
-      <button
-        onClick={() => navigate('/scoreboard')}
-        style={{
-          width: '100%',
-          maxWidth: '320px',
-          padding: '20px',
-          background: 'var(--color-surface)',
-          color: 'var(--color-text-primary)',
-          border: '2px solid var(--color-border)',
-          borderRadius: '14px',
-          fontSize: '1.1rem',
-          fontWeight: 700,
-          cursor: 'pointer',
-        }}
-      >
-        Scoreboard
-      </button>
+      <IconButton label="League" onClick={() => navigate('/league')}>
+        <img src="/paddle.png" alt="League" style={{ width: '100%', height: '100%', display: 'block' }} />
+      </IconButton>
+      <IconButton label="Scoreboard" onClick={() => navigate('/scoreboard')}>
+        <span role="img" aria-label="Scoreboard" style={{ fontSize: '6rem', lineHeight: 1 }}>🏆</span>
+      </IconButton>
     </div>
   );
 }
