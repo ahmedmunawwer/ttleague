@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './socket.js';
 import Home from './pages/Home.jsx';
 import LeagueMenu from './pages/LeagueMenu.jsx';
+import LeagueView from './pages/LeagueView.jsx';
 import Scoreboard from './pages/Scoreboard.jsx';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/league" element={<LeagueMenu />} />
+        <Route path="/league/:id" element={<LeagueView />} />
         <Route path="/scoreboard" element={<Scoreboard />} />
       </Routes>
     </BrowserRouter>

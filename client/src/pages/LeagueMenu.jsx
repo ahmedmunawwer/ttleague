@@ -22,7 +22,7 @@ function getBadgeLabel(status) {
   return 'Completed';
 }
 
-function LeagueCard({ league, onLongPress }) {
+function LeagueCard({ league, onLongPress, navigate }) {
   const longPress = useLongPress(onLongPress);
   const seasonInfo = league.config.num_seasons === null
     ? `Season ${league.state.current_season} (Unlimited)`
@@ -32,7 +32,7 @@ function LeagueCard({ league, onLongPress }) {
   return (
     <div
       {...longPress}
-      onClick={() => alert('Load league: ' + league.id)}
+      onClick={() => navigate('/league/' + league.id)}
       style={{
         background: 'var(--color-surface)',
         border: '1.5px solid var(--color-border)',
@@ -184,6 +184,7 @@ export default function LeagueMenu() {
             key={league.id}
             league={league}
             onLongPress={() => setSelectedLeague(league)}
+            navigate={navigate}
           />
         ))}
       </div>
