@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
+import Counter from '../components/Counter.jsx';
 
 export default function LeagueView() {
   const { id } = useParams();
@@ -8,6 +10,9 @@ export default function LeagueView() {
   const [league, setLeague] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('fixtures');
+  const [numTables, setNumTables] = useState(1);
+  const [generating, setGenerating] = useState(false);
+  const [fixtureError, setFixtureError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +32,33 @@ export default function LeagueView() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    function handleLeagueUpdated(payload) {
+      if (payload.id === id) {
+        socketEmit('load_league', id).then((result) => {
+          if (result.ok) setLeague(result.league);
+        });
+      }
+    }
+    socket.on('league_updated', handleLeagueUpdated);
+    return () => {
+      socket.off('league_updated', handleLeagueUpdated);
+    };
+  }, []);
+
+  async function handleGenerateFixtures() {
+    setGenerating(true);
+    setFixtureError(null);
+    const ack = await socketEmit('generate_fixtures', id, numTables);
+    if (ack.ok) {
+      setLeague(ack.league);
+      setGenerating(false);
+    } else {
+      setFixtureError(ack.error);
+      setGenerating(false);
+    }
+  }
 
   if (league === false) {
     return (
@@ -150,15 +182,151 @@ export default function LeagueView() {
         </button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
+      <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column' }}>
         {activeTab === 'fixtures' ? (
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '1rem' }}>
-            Fixture generation coming in Phase 5
-          </span>
+          !league.state.fixtures || league.state.fixtures.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', paddingTop: '20px' }}>
+              {fixtureError && (
+                <div style={{
+                  background: 'var(--color-error-bg)',
+                  color: 'var(--color-error)',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  textAlign: 'center',
+                }}>
+                  {fixtureError}
+                </div>
+              )}
+              <Counter label="Number of tables" value={numTables} onChange={setNumTables} min={1} max={6} />
+              <button
+                onClick={handleGenerateFixtures}
+                disabled={generating}
+                style={{
+                  padding: '12px 24px',
+                  background: 'var(--color-primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  opacity: generating ? 0.7 : 1,
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {generating ? 'Generating...' : 'Generate Fixtures'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {Object.entries(
+                league.state.fixtures.reduce((bySlot, fixture) => {
+                  (bySlot[fixture.slot] = bySlot[fixture.slot] || []).push(fixture);
+                  return bySlot;
+                }, {})
+              ).map(([slotNum, matches]) => (
+                <div key={slotNum} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                    Slot {slotNum}
+                  </span>
+                  {matches.map((match) => {
+                    const isFinished = match.scoreA !== null && match.scoreB !== null;
+                    const aWins = isFinished && match.scoreA > match.scoreB;
+                    const bWins = isFinished && match.scoreB > match.scoreA;
+                    return (
+                      <div
+                        key={match.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 10px',
+                          borderLeft: `4px solid var(--color-table-${match.table})`,
+                          background: isFinished ? 'var(--color-match-completed-bg)' : 'var(--color-surface)',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        <span style={{
+                          width: '24px',
+                          height: '20px',
+                          flexShrink: 0,
+                          borderRadius: '4px',
+                          background: `var(--color-table-${match.table})`,
+                          color: 'var(--color-surface)',
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          T{match.table}
+                        </span>
+                        <span style={{ flex: 1, textAlign: 'right', fontSize: '0.95rem', fontWeight: aWins ? 700 : 600, color: 'var(--color-text-primary)' }}>
+                          {match.playerA}
+                        </span>
+                        {isFinished ? (
+                          <span style={{ width: '36px', textAlign: 'center', fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                            {match.scoreA}
+                          </span>
+                        ) : (
+                          <input
+                            type="text"
+                            value={match.scoreA ?? ''}
+                            disabled
+                            style={{
+                              width: '36px',
+                              textAlign: 'center',
+                              padding: '6px 4px',
+                              border: '1.5px solid var(--color-border)',
+                              borderRadius: '6px',
+                              background: 'var(--color-border)',
+                              color: 'var(--color-text-secondary)',
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        )}
+                        <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>vs</span>
+                        {isFinished ? (
+                          <span style={{ width: '36px', textAlign: 'center', fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                            {match.scoreB}
+                          </span>
+                        ) : (
+                          <input
+                            type="text"
+                            value={match.scoreB ?? ''}
+                            disabled
+                            style={{
+                              width: '36px',
+                              textAlign: 'center',
+                              padding: '6px 4px',
+                              border: '1.5px solid var(--color-border)',
+                              borderRadius: '6px',
+                              background: 'var(--color-border)',
+                              color: 'var(--color-text-secondary)',
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        )}
+                        <span style={{ flex: 1, textAlign: 'left', fontSize: '0.95rem', fontWeight: bWins ? 700 : 600, color: 'var(--color-text-primary)' }}>
+                          {match.playerB}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )
         ) : (
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '1rem' }}>
-            Standings will appear once matches are played
-          </span>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <span style={{ color: 'var(--color-text-secondary)', fontSize: '1rem' }}>
+              Standings will appear once matches are played
+            </span>
+          </div>
         )}
       </div>
     </div>
