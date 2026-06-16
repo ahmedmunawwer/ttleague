@@ -2,6 +2,7 @@
 
 const supabase = require('../supabase');
 const { isValidUuid, validateName, validateStatus, validateLeagueConfig } = require('../validate');
+const scoreboardManager = require('../scoreboardManager');
 
 function registerLeagueHandlers(io, socket) {
 
@@ -35,7 +36,11 @@ function registerLeagueHandlers(io, socket) {
         return cb({ ok: false, error: 'Failed to create league' });
       }
 
+      try { await scoreboardManager.writeEntry(data.id, data); }
+      catch (sbErr) { console.warn('[scoreboard] writeEntry failed (non-fatal):', sbErr.message); }
+
       io.emit('leagues_list_changed');
+      io.emit('scoreboard_changed');
       cb({ ok: true, league: data });
     } catch (err) {
       console.error('[create_league]', err);
@@ -135,6 +140,16 @@ function registerLeagueHandlers(io, socket) {
     try {
       if (!isValidUuid(id)) return cb({ ok: false, error: 'Invalid ID format' });
 
+      // markTerminated first — scoreboard must be archived before the row is hard-deleted.
+      // If the league has no scoreboard row (pre-scoreboard legacy data), markTerminated
+      // no-ops silently; the hard delete proceeds but leaves no scoreboard entry.
+      try {
+        await scoreboardManager.markTerminated(id);
+      } catch (sbErr) {
+        console.error('[delete_league] scoreboard archive failed:', sbErr.message);
+        return cb({ ok: false, error: 'Failed to archive league' });
+      }
+
       const { data, error } = await supabase
         .from('leagues')
         .delete()
@@ -151,6 +166,7 @@ function registerLeagueHandlers(io, socket) {
       }
 
       io.emit('leagues_list_changed');
+      io.emit('scoreboard_changed');
       cb({ ok: true });
     } catch (err) {
       console.error('[delete_league]', err);

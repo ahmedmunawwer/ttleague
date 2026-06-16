@@ -8,4 +8,11 @@
   --color-surface: #ffffff;
   --color-border: #e0e0e0;
   --color-icon-bg: #4a4d5e;
+  --color-badge-in-progress-bg: #e8f5e9;
+  --color-badge-in-progress-text: #1b5e20;
+  --color-badge-terminated-bg: #eceff1;
+  --color-badge-terminated-text: #37474f;
+  --color-badge-completed-bg: #fff3e0;
+  --color-badge-completed-text: #e65100;
+  --color-error-bg: #ffebee;
 }

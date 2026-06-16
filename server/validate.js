@@ -23,7 +23,7 @@ function validateInt(value, min, max) {
 }
 
 function validateStatus(status) {
-  if (status !== 'in_progress' && status !== 'completed') {
+  if (status !== 'in_progress' && status !== 'completed' && status !== 'terminated') {
     return { ok: false, error: 'Invalid status filter' };
   }
   return { ok: true };
