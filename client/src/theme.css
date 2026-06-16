@@ -22,4 +22,6 @@
   --color-table-5: #7b1fa2;
   --color-table-6: #00897b;
   --color-match-completed-bg: #eceff1;
+  --color-winner-bg: #c8e6c9;
+  --color-loser-bg: #ffcdd2;
 }

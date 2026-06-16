@@ -89,4 +89,36 @@ function validateLeagueConfig(config) {
   };
 }
 
-module.exports = { isValidUuid, validateName, validateInt, validateStatus, validateLeagueConfig };
+function validateMatchScore(scoreA, scoreB, gamePoint) {
+  if (scoreA === null && scoreB === null) {
+    return { ok: true };
+  }
+
+  if (scoreA === null || scoreB === null) {
+    return { ok: false, error: 'Both scores required' };
+  }
+
+  if (!Number.isInteger(scoreA) || !Number.isInteger(scoreB)) {
+    return { ok: false, error: 'Scores must be integers' };
+  }
+
+  if (scoreA < 0 || scoreB < 0) {
+    return { ok: false, error: 'Scores cannot be negative' };
+  }
+
+  if (scoreA === scoreB) {
+    return { ok: false, error: 'Scores cannot be tied' };
+  }
+
+  const winner = Math.max(scoreA, scoreB);
+  const loser = Math.min(scoreA, scoreB);
+  const expected = Math.max(gamePoint + 1, loser + 2);
+
+  if (winner !== expected) {
+    return { ok: false, error: `Invalid final score (expected ${expected} for loser ${loser})` };
+  }
+
+  return { ok: true };
+}
+
+module.exports = { isValidUuid, validateName, validateInt, validateStatus, validateLeagueConfig, validateMatchScore };
