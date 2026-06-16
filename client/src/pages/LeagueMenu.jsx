@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
 import useLongPress from '../hooks/useLongPress.js';
-import CreateLeagueStub from '../components/CreateLeagueStub.jsx';
+import NewLeagueWizard from '../components/NewLeagueWizard.jsx';
 import LeagueInfoModal from '../components/LeagueInfoModal.jsx';
 
 function getBadgeStyle(status) {
@@ -188,7 +188,7 @@ export default function LeagueMenu() {
         ))}
       </div>
 
-      {showCreate && <CreateLeagueStub onClose={() => setShowCreate(false)} />}
+      {showCreate && <NewLeagueWizard onClose={() => setShowCreate(false)} />}
       {selectedLeague && <LeagueInfoModal league={selectedLeague} onClose={() => setSelectedLeague(null)} />}
     </div>
   );
