@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
 import Counter from '../components/Counter.jsx';
+import { computeStandings } from '../utils/standings.js';
+import TiebreakerModal from '../components/TiebreakerModal.jsx';
 
 function computeWinnerScore(loserScore, gamePoint) {
   return Math.max(gamePoint + 1, loserScore + 2);
@@ -20,6 +22,7 @@ export default function LeagueView() {
   const [editing, setEditing] = useState(null);
   const [savingMatchId, setSavingMatchId] = useState(null);
   const [scoreErrors, setScoreErrors] = useState({});
+  const [tiebreakerGroup, setTiebreakerGroup] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,6 +146,8 @@ export default function LeagueView() {
   const seasonInfo = league.config.num_seasons === null
     ? `Season ${league.state.current_season} (Unlimited)`
     : `Season ${league.state.current_season} of ${league.config.num_seasons}`;
+
+  const standings = computeStandings(league.state.fixtures, league.config.players, league.config.points_per_win, league.config.game_point);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
@@ -480,13 +485,107 @@ export default function LeagueView() {
             </div>
           )
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-            <span style={{ color: 'var(--color-text-secondary)', fontSize: '1rem' }}>
-              Standings will appear once matches are played
-            </span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {!league.state.fixtures || league.state.fixtures.every(f => f.scoreA === null || f.scoreB === null) ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <span style={{ color: 'var(--color-text-secondary)', fontSize: '1rem' }}>
+                  No matches played yet
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', overflowX: 'auto' }}>
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        padding: '12px 10px',
+                        borderBottom: '1.5px solid var(--color-border)',
+                        background: 'var(--color-surface)',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        color: 'var(--color-text-secondary)',
+                      }}>
+                        <span style={{ width: '30px', textAlign: 'center' }}>Rank</span>
+                        <span style={{ flex: 1, textAlign: 'left' }}>Player</span>
+                        <span style={{ width: '25px', textAlign: 'center' }}>P</span>
+                        <span style={{ width: '25px', textAlign: 'center' }}>W</span>
+                        <span style={{ width: '25px', textAlign: 'center' }}>L</span>
+                        <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>Pts</span>
+                        <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>PF</span>
+                        <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>PA</span>
+                        <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>D</span>
+                      </div>
+
+                      {standings.map((row) => (
+                        <div key={row.player} style={{
+                          display: 'flex',
+                          gap: '8px',
+                          padding: '12px 10px',
+                          borderBottom: '1px solid var(--color-border)',
+                          background: 'var(--color-surface)',
+                          fontSize: '0.95rem',
+                          color: 'var(--color-text-primary)',
+                          alignItems: 'center',
+                        }}>
+                          <span style={{ width: '30px', textAlign: 'center', fontWeight: 700 }}>
+                            {row.rank}
+                          </span>
+                          <span style={{ flex: 1, textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {row.player}
+                            {row.tieGroup !== null && row.tieGroup.length > 1 && (
+                              <span
+                                onClick={() => setTiebreakerGroup({ players: row.tieGroup, pointsLevel: row.leaguePoints })}
+                                style={{
+                                  cursor: 'pointer',
+                                  fontWeight: 600,
+                                  color: 'var(--color-primary)',
+                                  fontSize: '0.85rem',
+                                }}
+                              >
+                                ⓘ
+                              </span>
+                            )}
+                          </span>
+                          <span style={{ width: '25px', textAlign: 'center' }}>
+                            {row.matchesPlayed}
+                          </span>
+                          <span style={{ width: '25px', textAlign: 'center' }}>
+                            {row.wins}
+                          </span>
+                          <span style={{ width: '25px', textAlign: 'center' }}>
+                            {row.losses}
+                          </span>
+                          <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px', fontWeight: 700 }}>
+                            {row.leaguePoints}
+                          </span>
+                          <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
+                            {row.pointsFor}
+                          </span>
+                          <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
+                            {row.pointsAgainst}
+                          </span>
+                          <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>
+                            {row.pointDiff > 0 ? '+' + row.pointDiff : row.pointDiff}
+                          </span>
+                        </div>
+                      ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {tiebreakerGroup && (
+        <TiebreakerModal
+          group={tiebreakerGroup.players}
+          fixtures={league.state.fixtures}
+          pointsLevel={tiebreakerGroup.pointsLevel}
+          standings={standings}
+          gamePoint={league.config.game_point}
+          onClose={() => setTiebreakerGroup(null)}
+        />
+      )}
     </div>
   );
 }
