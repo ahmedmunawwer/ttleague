@@ -5,6 +5,7 @@ import socketEmit from '../socketEmit.js';
 import Counter from '../components/Counter.jsx';
 import { computeStandings } from '../utils/standings.js';
 import TiebreakerModal from '../components/TiebreakerModal.jsx';
+import SeasonActionModal from '../components/SeasonActionModal.jsx';
 
 function computeWinnerScore(loserScore, gamePoint) {
   return Math.max(gamePoint + 1, loserScore + 2);
@@ -23,6 +24,7 @@ export default function LeagueView() {
   const [savingMatchId, setSavingMatchId] = useState(null);
   const [scoreErrors, setScoreErrors] = useState({});
   const [tiebreakerGroup, setTiebreakerGroup] = useState(null);
+  const [seasonActionModal, setSeasonActionModal] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,6 +151,25 @@ export default function LeagueView() {
 
   const standings = computeStandings(league.state.fixtures, league.config.players, league.config.points_per_win, league.config.game_point);
 
+  const seasonComplete = league.state.fixtures.length > 0 && league.state.fixtures.every(f => f.scoreA !== null && f.scoreB !== null);
+  const showStartNext = seasonComplete && (league.config.num_seasons === null || league.state.current_season < league.config.num_seasons);
+  const showEndLeague = seasonComplete && league.status === 'in_progress';
+  const isReadOnly = league.status !== 'in_progress';
+
+  const handleSeasonAction = async (action) => {
+    const event = action === 'next' ? 'complete_season' : 'end_league';
+    try {
+      const result = await socketEmit(event, league.id);
+      if (result.ok) {
+        setSeasonActionModal(null);
+      } else {
+        alert(result.error || 'Action failed');
+      }
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
       <div style={{
@@ -188,6 +209,12 @@ export default function LeagueView() {
       <div style={{ textAlign: 'center', padding: '10px 0', fontSize: '0.85rem', color: 'var(--color-text-secondary)', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
         {seasonInfo}
       </div>
+
+      {isReadOnly && (
+        <div style={{ padding: '8px 16px', background: 'var(--color-badge-completed-bg)', color: 'var(--color-badge-completed-text)', borderRadius: '8px', textAlign: 'center', margin: '8px 0', fontWeight: 600, fontSize: '0.9rem' }}>
+          League Completed
+        </div>
+      )}
 
       <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)' }}>
         <button
@@ -245,25 +272,33 @@ export default function LeagueView() {
                   {fixtureError}
                 </div>
               )}
-              <Counter label="Number of tables" value={numTables} onChange={setNumTables} min={1} max={6} />
-              <button
-                onClick={handleGenerateFixtures}
-                disabled={generating}
-                style={{
-                  padding: '12px 24px',
-                  background: 'var(--color-primary)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  opacity: generating ? 0.7 : 1,
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                {generating ? 'Generating...' : 'Generate Fixtures'}
-              </button>
+              {isReadOnly ? (
+                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                  League completed — no fixtures were generated
+                </span>
+              ) : (
+                <>
+                  <Counter label="Number of tables" value={numTables} onChange={setNumTables} min={1} max={6} />
+                  <button
+                    onClick={handleGenerateFixtures}
+                    disabled={generating}
+                    style={{
+                      padding: '12px 24px',
+                      background: 'var(--color-primary)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      opacity: generating ? 0.7 : 1,
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    {generating ? 'Generating...' : 'Generate Fixtures'}
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -342,9 +377,17 @@ export default function LeagueView() {
 
                     function renderScoreCell(side) {
                       const isThisSideStar = side === 'A' ? aIsWinner : bIsWinner;
+                      const scoreValue = side === 'A' ? resolvedScoreA : resolvedScoreB;
+
+                      if (isReadOnly) {
+                        return (
+                          <span style={{ width: '44px', textAlign: 'center', fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                            {scoreValue}
+                          </span>
+                        );
+                      }
 
                       if (isThisSideStar) {
-                        const starScore = side === 'A' ? resolvedScoreA : resolvedScoreB;
                         return (
                           <button
                             onClick={() => handleStarTap(side)}
@@ -362,7 +405,7 @@ export default function LeagueView() {
                               WebkitTapHighlightColor: 'transparent',
                             }}
                           >
-                            {starScore}
+                            {scoreValue}
                           </button>
                         );
                       }
@@ -494,6 +537,68 @@ export default function LeagueView() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {seasonComplete && league.status === 'in_progress' && (
+                  <div style={{
+                    padding: '16px',
+                    background: 'var(--color-surface)',
+                    border: '2px solid var(--color-primary)',
+                    borderRadius: '12px',
+                    marginBottom: '16px',
+                    textAlign: 'center',
+                  }}>
+                    <div style={{
+                      fontSize: '1.1rem',
+                      fontWeight: 700,
+                      color: 'var(--color-primary)',
+                      marginBottom: '4px',
+                    }}>
+                      Season {league.state.current_season} complete
+                    </div>
+                    <div style={{
+                      fontSize: '0.85rem',
+                      color: 'var(--color-text-secondary)',
+                      marginBottom: '12px',
+                    }}>
+                      {showStartNext ? 'Choose how to continue' : 'This was the final configured season'}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      {showStartNext && (
+                        <button
+                          onClick={() => setSeasonActionModal({ action: 'next', league })}
+                          style={{
+                            padding: '12px 20px',
+                            background: 'var(--color-primary)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '10px',
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            WebkitTapHighlightColor: 'transparent',
+                          }}
+                        >
+                          Start Next Season →
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setSeasonActionModal({ action: 'end', league })}
+                        style={{
+                          padding: '12px 20px',
+                          background: 'none',
+                          color: 'var(--color-text-secondary)',
+                          border: '1.5px solid var(--color-border)',
+                          borderRadius: '10px',
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        End the League
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', overflowX: 'auto' }}>
                       <div style={{
                         display: 'flex',
@@ -584,6 +689,15 @@ export default function LeagueView() {
           standings={standings}
           gamePoint={league.config.game_point}
           onClose={() => setTiebreakerGroup(null)}
+        />
+      )}
+
+      {seasonActionModal && (
+        <SeasonActionModal
+          action={seasonActionModal.action}
+          league={seasonActionModal.league}
+          onConfirm={() => handleSeasonAction(seasonActionModal.action)}
+          onCancel={() => setSeasonActionModal(null)}
         />
       )}
     </div>

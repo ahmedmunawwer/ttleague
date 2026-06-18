@@ -121,4 +121,21 @@ function validateMatchScore(scoreA, scoreB, gamePoint) {
   return { ok: true };
 }
 
-module.exports = { isValidUuid, validateName, validateInt, validateStatus, validateLeagueConfig, validateMatchScore };
+function validateSeasonComplete(league) {
+  if (!league.state || !Array.isArray(league.state.fixtures)) {
+    return { ok: false, error: 'League has no fixtures' };
+  }
+
+  if (league.state.fixtures.length === 0) {
+    return { ok: false, error: 'Season not complete — no fixtures generated' };
+  }
+
+  const allPlayed = league.state.fixtures.every(f => f.scoreA !== null && f.scoreB !== null);
+  if (!allPlayed) {
+    return { ok: false, error: 'Season not complete — all matches must be played' };
+  }
+
+  return { ok: true };
+}
+
+module.exports = { isValidUuid, validateName, validateInt, validateStatus, validateLeagueConfig, validateMatchScore, validateSeasonComplete };

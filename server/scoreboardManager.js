@@ -21,6 +21,7 @@ async function writeEntry(id, leagueData) {
     completionStatus: leagueData.status,
     config: leagueData.config,
     state: leagueData.state,
+    history: leagueData.history || [],
   };
 
   if (existing) {
