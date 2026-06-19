@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
@@ -22,12 +22,21 @@ export default function LeagueView() {
   const [generating, setGenerating] = useState(false);
   const [fixtureError, setFixtureError] = useState(null);
   const [editing, setEditing] = useState(null);
-  const [savingMatchId, setSavingMatchId] = useState(null);
   const [scoreErrors, setScoreErrors] = useState({});
   const [tiebreakerGroup, setTiebreakerGroup] = useState(null);
   const [seasonActionModal, setSeasonActionModal] = useState(null);
   const [standingsView, setStandingsView] = useState('current');
   const [showBreakdown, setShowBreakdown] = useState(false);
+
+  const debounceTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,38 +82,6 @@ export default function LeagueView() {
       setFixtureError(ack.error);
       setGenerating(false);
     }
-  }
-
-  async function handleSaveScore(match, resolvedScoreA, resolvedScoreB) {
-    setSavingMatchId(match.id);
-    try {
-      const ack = await socketEmit('update_match_score', id, match.id, resolvedScoreA, resolvedScoreB);
-      if (ack.ok) {
-        setLeague(ack.league);
-        setEditing(null);
-        setSavingMatchId(null);
-        setScoreErrors((prev) => {
-          const next = { ...prev };
-          delete next[match.id];
-          return next;
-        });
-      } else {
-        setScoreErrors((prev) => ({ ...prev, [match.id]: ack.error }));
-        setSavingMatchId(null);
-      }
-    } catch (err) {
-      setScoreErrors((prev) => ({ ...prev, [match.id]: 'Network error' }));
-      setSavingMatchId(null);
-    }
-  }
-
-  function handleCancelEdit(matchId) {
-    setEditing(null);
-    setScoreErrors((prev) => {
-      const next = { ...prev };
-      delete next[matchId];
-      return next;
-    });
   }
 
   if (league === false) {
@@ -186,6 +163,35 @@ export default function LeagueView() {
       alert('Network error: ' + err.message);
     }
   };
+
+  async function performAutoSave(match, loserScoreStr, loserSide) {
+    const loserScoreNum = /^\d+$/.test(loserScoreStr) ? parseInt(loserScoreStr, 10) : null;
+    if (loserScoreNum === null) return;
+
+    const winnerScoreNum = computeWinnerScore(loserScoreNum, league.config.game_point);
+    const resolvedScoreA = loserSide === 'A' ? loserScoreNum : winnerScoreNum;
+    const resolvedScoreB = loserSide === 'B' ? loserScoreNum : winnerScoreNum;
+
+    if (resolvedScoreA === match.scoreA && resolvedScoreB === match.scoreB) {
+      return;
+    }
+
+    try {
+      const ack = await socketEmit('update_match_score', id, match.id, resolvedScoreA, resolvedScoreB);
+      if (ack.ok) {
+        setLeague(ack.league);
+        setScoreErrors((prev) => {
+          const next = { ...prev };
+          delete next[match.id];
+          return next;
+        });
+      } else {
+        setScoreErrors((prev) => ({ ...prev, [match.id]: ack.error }));
+      }
+    } catch (err) {
+      setScoreErrors((prev) => ({ ...prev, [match.id]: 'Network error' }));
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
@@ -366,13 +372,17 @@ export default function LeagueView() {
                       resolvedScoreB = match.scoreB;
                     }
 
-                    const canSave = isEditingThis
-                      && loserScoreNum !== null
-                      && (resolvedScoreA !== match.scoreA || resolvedScoreB !== match.scoreB);
-
                     function handleScoreChange(letter, rawValue) {
                       const digits = rawValue.replace(/\D/g, '').slice(0, 3);
                       setEditing({ matchId: match.id, loserInput: letter, loserScore: digits });
+
+                      if (debounceTimerRef.current) {
+                        clearTimeout(debounceTimerRef.current);
+                      }
+
+                      debounceTimerRef.current = setTimeout(() => {
+                        performAutoSave(match, digits, letter);
+                      }, 500);
                     }
 
                     function handleStarTap(side) {
@@ -488,44 +498,6 @@ export default function LeagueView() {
                           <span style={{ flex: 1, textAlign: 'left', fontSize: '0.95rem', fontWeight: bWins ? 700 : 600, color: 'var(--color-text-primary)' }}>
                             {match.playerB}
                           </span>
-                          {isEditingThis && (
-                            <>
-                              <button
-                                onClick={() => handleSaveScore(match, resolvedScoreA, resolvedScoreB)}
-                                disabled={!canSave || savingMatchId === match.id}
-                                style={{
-                                  padding: '6px 10px',
-                                  background: 'var(--color-primary)',
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  opacity: (!canSave || savingMatchId === match.id) ? 0.5 : 1,
-                                  WebkitTapHighlightColor: 'transparent',
-                                }}
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={() => handleCancelEdit(match.id)}
-                                style={{
-                                  padding: '6px 10px',
-                                  background: 'none',
-                                  border: '1.5px solid var(--color-border)',
-                                  borderRadius: '6px',
-                                  color: 'var(--color-text-secondary)',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  WebkitTapHighlightColor: 'transparent',
-                                }}
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          )}
                         </div>
                         {scoreErrors[match.id] && (
                           <span style={{
