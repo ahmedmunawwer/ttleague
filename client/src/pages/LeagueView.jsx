@@ -6,6 +6,7 @@ import Counter from '../components/Counter.jsx';
 import { computeStandings } from '../utils/standings.js';
 import TiebreakerModal from '../components/TiebreakerModal.jsx';
 import SeasonActionModal from '../components/SeasonActionModal.jsx';
+import SeasonBreakdownModal from '../components/SeasonBreakdownModal.jsx';
 
 function computeWinnerScore(loserScore, gamePoint) {
   return Math.max(gamePoint + 1, loserScore + 2);
@@ -25,6 +26,8 @@ export default function LeagueView() {
   const [scoreErrors, setScoreErrors] = useState({});
   const [tiebreakerGroup, setTiebreakerGroup] = useState(null);
   const [seasonActionModal, setSeasonActionModal] = useState(null);
+  const [standingsView, setStandingsView] = useState('current');
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,6 +153,20 @@ export default function LeagueView() {
     : `Season ${league.state.current_season} of ${league.config.num_seasons}`;
 
   const standings = computeStandings(league.state.fixtures, league.config.players, league.config.points_per_win, league.config.game_point);
+
+  const allTimeFixtures = [
+    ...(league.history || []).flatMap(snapshot => snapshot.fixtures),
+    ...league.state.fixtures
+  ];
+  const allTimeStandings = computeStandings(
+    allTimeFixtures,
+    league.config.players,
+    league.config.points_per_win,
+    league.config.game_point
+  );
+
+  const activeStandings = standingsView === 'alltime' ? allTimeStandings : standings;
+  const activeFixtures = standingsView === 'alltime' ? allTimeFixtures : league.state.fixtures;
 
   const seasonComplete = league.state.fixtures.length > 0 && league.state.fixtures.every(f => f.scoreA !== null && f.scoreB !== null);
   const showStartNext = seasonComplete && (league.config.num_seasons === null || league.state.current_season < league.config.num_seasons);
@@ -599,6 +616,53 @@ export default function LeagueView() {
                     </div>
                   </div>
                 )}
+
+                {(league.state.fixtures.length > 0 || (league.history && league.history.length > 0)) && (
+                  <div style={{
+                    display: 'flex',
+                    padding: '4px',
+                    background: 'var(--color-border)',
+                    borderRadius: '999px',
+                    marginBottom: '12px',
+                    gap: '4px',
+                  }}>
+                    <button
+                      onClick={() => setStandingsView('current')}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        background: standingsView === 'current' ? 'var(--color-primary)' : 'transparent',
+                        color: standingsView === 'current' ? '#fff' : 'var(--color-text-secondary)',
+                        border: 'none',
+                        borderRadius: '999px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      Current Season
+                    </button>
+                    <button
+                      onClick={() => setStandingsView('alltime')}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        background: standingsView === 'alltime' ? 'var(--color-primary)' : 'transparent',
+                        color: standingsView === 'alltime' ? '#fff' : 'var(--color-text-secondary)',
+                        border: 'none',
+                        borderRadius: '999px',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      All-Time
+                    </button>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', overflowX: 'auto' }}>
                       <div style={{
                         display: 'flex',
@@ -621,7 +685,7 @@ export default function LeagueView() {
                         <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>D</span>
                       </div>
 
-                      {standings.map((row) => (
+                      {activeStandings.map((row) => (
                         <div key={row.player} style={{
                           display: 'flex',
                           gap: '8px',
@@ -675,6 +739,28 @@ export default function LeagueView() {
                         </div>
                       ))}
                 </div>
+
+                {standingsView === 'alltime' && league.history && league.history.length > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                    <button
+                      onClick={() => setShowBreakdown(true)}
+                      style={{
+                        padding: '12px 20px',
+                        background: 'transparent',
+                        color: 'var(--color-primary)',
+                        border: '1.5px solid var(--color-primary)',
+                        borderRadius: '10px',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      Points by Season
+                    </button>
+                  </div>
+                )}
+
               </div>
             )}
           </div>
@@ -684,11 +770,18 @@ export default function LeagueView() {
       {tiebreakerGroup && (
         <TiebreakerModal
           group={tiebreakerGroup.players}
-          fixtures={league.state.fixtures}
+          fixtures={activeFixtures}
           pointsLevel={tiebreakerGroup.pointsLevel}
           standings={standings}
           gamePoint={league.config.game_point}
           onClose={() => setTiebreakerGroup(null)}
+        />
+      )}
+
+      {showBreakdown && (
+        <SeasonBreakdownModal
+          league={league}
+          onClose={() => setShowBreakdown(false)}
         />
       )}
 
