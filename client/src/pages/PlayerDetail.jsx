@@ -5,15 +5,17 @@ import socketEmit from '../socketEmit.js';
 import { computePlayerDetail } from '../utils/leagueAggregations.js';
 
 const HEADER_STYLE = {
-  display: 'flex',
-  alignItems: 'center',
+  position: 'relative',
   padding: '16px 20px',
   borderBottom: '1px solid var(--color-border)',
   background: 'var(--color-surface)',
-  gap: '16px',
 };
 
 const BACK_BTN_STYLE = {
+  position: 'absolute',
+  left: '20px',
+  top: '50%',
+  transform: 'translateY(-50%)',
   background: 'none',
   border: 'none',
   color: 'var(--color-primary)',
@@ -25,7 +27,6 @@ const BACK_BTN_STYLE = {
 };
 
 const PLAYER_NAME_STYLE = {
-  flex: 1,
   textAlign: 'center',
   margin: 0,
   fontSize: '1.3rem',
@@ -208,7 +209,7 @@ export default function PlayerDetail() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
       <div style={HEADER_STYLE}>
-        <button onClick={() => navigate(-1)} style={BACK_BTN_STYLE}>← Back</button>
+        <button onClick={() => navigate(-1)} style={BACK_BTN_STYLE}>←</button>
         <h1 style={PLAYER_NAME_STYLE}>{playerName}</h1>
       </div>
 

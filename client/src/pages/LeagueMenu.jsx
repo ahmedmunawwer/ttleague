@@ -98,8 +98,7 @@ export default function LeagueMenu() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
+        position: 'relative',
         padding: '16px 20px',
         borderBottom: '1px solid var(--color-border)',
         background: 'var(--color-surface)',
@@ -107,6 +106,10 @@ export default function LeagueMenu() {
         <button
           onClick={() => navigate(-1)}
           style={{
+            position: 'absolute',
+            left: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
             background: 'none',
             border: 'none',
             color: 'var(--color-primary)',
@@ -117,10 +120,9 @@ export default function LeagueMenu() {
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          ← Back
+          ←
         </button>
         <h1 style={{
-          flex: 1,
           textAlign: 'center',
           margin: 0,
           fontSize: '1.2rem',
@@ -132,6 +134,10 @@ export default function LeagueMenu() {
         <button
           onClick={() => setShowCreate(true)}
           style={{
+            position: 'absolute',
+            right: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
             width: '36px',
             height: '36px',
             background: 'var(--color-primary)',

@@ -164,8 +164,7 @@ export default function Scoreboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
+        position: 'relative',
         padding: '16px 20px',
         borderBottom: '1px solid var(--color-border)',
         background: 'var(--color-surface)',
@@ -173,6 +172,10 @@ export default function Scoreboard() {
         <button
           onClick={() => navigate(-1)}
           style={{
+            position: 'absolute',
+            left: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
             background: 'none',
             border: 'none',
             color: 'var(--color-primary)',
@@ -183,10 +186,9 @@ export default function Scoreboard() {
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          ← Back
+          ←
         </button>
         <h1 style={{
-          flex: 1,
           textAlign: 'center',
           margin: 0,
           fontSize: '1.2rem',
