@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
-import { computeLeagueSummary } from '../utils/leagueAggregations.js';
+import { computeLeagueSummary, computeAllPlayersStats } from '../utils/leagueAggregations.js';
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -32,6 +32,33 @@ function getBadgeLabel(status) {
   if (status === 'in_progress') return 'In Progress';
   if (status === 'terminated') return 'Terminated';
   return 'Completed';
+}
+
+function PlayerCard({ player, navigate }) {
+  return (
+    <div
+      onClick={() => navigate(`/players/${encodeURIComponent(player.name)}`)}
+      style={{
+        background: 'var(--color-surface)',
+        border: '1.5px solid var(--color-border)',
+        borderRadius: '14px',
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+      }}
+    >
+      <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
+        {player.name}
+      </span>
+      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+        {player.leaguesPlayed} played • {player.leaguesWon} won • {player.wins}-{player.losses} • {player.pointsFor}-{player.pointsAgainst}
+      </span>
+    </div>
+  );
 }
 
 function ScoreboardCard({ entry, navigate }) {
@@ -98,18 +125,24 @@ function ScoreboardCard({ entry, navigate }) {
 export default function Scoreboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
+  const [scoreboardView, setScoreboardView] = useState('leagues');
   const [entries, setEntries] = useState(null);
   const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     async function fetchEntries() {
-      const result = activeTab === 'all'
-        ? await socketEmit('list_scoreboard')
-        : await socketEmit('list_scoreboard', { status: activeTab });
+      let result;
+      if (scoreboardView === 'players') {
+        result = await socketEmit('list_scoreboard');
+      } else {
+        result = activeTab === 'all'
+          ? await socketEmit('list_scoreboard')
+          : await socketEmit('list_scoreboard', { status: activeTab });
+      }
       if (cancelled) return;
       if (result.ok) {
-        const list = activeTab === 'all'
+        const list = (scoreboardView === 'players' || activeTab === 'all')
           ? result.entries.filter((e) => e.completionStatus !== 'terminated')
           : result.entries;
         setEntries(list);
@@ -124,7 +157,9 @@ export default function Scoreboard() {
       cancelled = true;
       socket.off('scoreboard_changed', fetchEntries);
     };
-  }, [activeTab]);
+  }, [activeTab, scoreboardView]);
+
+  const players = scoreboardView === 'players' && entries ? computeAllPlayersStats(entries) : [];
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
@@ -162,28 +197,69 @@ export default function Scoreboard() {
         </h1>
       </div>
 
-      <div style={{ display: 'flex', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
-        {TABS.map((tab) => (
+      <div style={{ display: 'flex', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', justifyContent: 'center', padding: '12px 20px' }}>
+        <div style={{ display: 'flex', background: 'var(--color-border)', borderRadius: '8px', padding: '4px' }}>
           <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => setScoreboardView('leagues')}
             style={{
               flex: 1,
-              background: 'none',
+              padding: '8px 16px',
+              background: scoreboardView === 'leagues' ? 'var(--color-primary)' : 'transparent',
+              color: scoreboardView === 'leagues' ? '#fff' : 'var(--color-text-secondary)',
               border: 'none',
-              borderBottom: `2px solid ${activeTab === tab.key ? 'var(--color-primary)' : 'transparent'}`,
-              color: activeTab === tab.key ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              padding: '12px 0',
+              borderRadius: '6px',
               fontSize: '0.9rem',
-              fontWeight: 700,
+              fontWeight: 600,
               cursor: 'pointer',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {tab.label}
+            Leagues
           </button>
-        ))}
+          <button
+            onClick={() => setScoreboardView('players')}
+            style={{
+              flex: 1,
+              padding: '8px 16px',
+              background: scoreboardView === 'players' ? 'var(--color-primary)' : 'transparent',
+              color: scoreboardView === 'players' ? '#fff' : 'var(--color-text-secondary)',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Players
+          </button>
+        </div>
       </div>
+
+      {scoreboardView === 'leagues' && (
+        <div style={{ display: 'flex', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                flex: 1,
+                background: 'none',
+                border: 'none',
+                borderBottom: `2px solid ${activeTab === tab.key ? 'var(--color-primary)' : 'transparent'}`,
+                color: activeTab === tab.key ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                padding: '12px 0',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {entries === null && !fetchError && (
@@ -209,12 +285,16 @@ export default function Scoreboard() {
 
         {entries !== null && entries.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: '40px', fontSize: '1rem' }}>
-            {EMPTY_MESSAGES[activeTab]}
+            {scoreboardView === 'leagues' ? EMPTY_MESSAGES[activeTab] : 'No players yet'}
           </div>
         )}
 
-        {entries !== null && entries.length > 0 && entries.map((entry) => (
+        {scoreboardView === 'leagues' && entries !== null && entries.length > 0 && entries.map((entry) => (
           <ScoreboardCard key={entry.id} entry={entry} navigate={navigate} />
+        ))}
+
+        {scoreboardView === 'players' && players.length > 0 && players.map((player) => (
+          <PlayerCard key={player.name} player={player} navigate={navigate} />
         ))}
       </div>
     </div>
