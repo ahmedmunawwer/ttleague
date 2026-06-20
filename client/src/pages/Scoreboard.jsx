@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
 import { computeLeagueSummary, computeAllPlayersStats } from '../utils/leagueAggregations.js';
@@ -124,10 +124,21 @@ function ScoreboardCard({ entry, navigate }) {
 
 export default function Scoreboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get('view') === 'players' ? 'players' : 'leagues';
   const [activeTab, setActiveTab] = useState('all');
-  const [scoreboardView, setScoreboardView] = useState('leagues');
+  const [scoreboardView, setScoreboardView] = useState(initialView);
   const [entries, setEntries] = useState(null);
   const [fetchError, setFetchError] = useState(null);
+
+  function changeView(view) {
+    setScoreboardView(view);
+    if (view === 'players') {
+      setSearchParams({ view: 'players' });
+    } else {
+      setSearchParams({});
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -202,7 +213,7 @@ export default function Scoreboard() {
       <div style={{ display: 'flex', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', justifyContent: 'center', padding: '12px 20px' }}>
         <div style={{ display: 'flex', background: 'var(--color-border)', borderRadius: '8px', padding: '4px' }}>
           <button
-            onClick={() => setScoreboardView('leagues')}
+            onClick={() => changeView('leagues')}
             style={{
               flex: 1,
               padding: '8px 16px',
@@ -219,7 +230,7 @@ export default function Scoreboard() {
             Leagues
           </button>
           <button
-            onClick={() => setScoreboardView('players')}
+            onClick={() => changeView('players')}
             style={{
               flex: 1,
               padding: '8px 16px',
