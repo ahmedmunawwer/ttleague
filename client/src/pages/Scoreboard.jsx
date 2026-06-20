@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
+import { computeLeagueSummary } from '../utils/leagueAggregations.js';
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -33,14 +34,30 @@ function getBadgeLabel(status) {
   return 'Completed';
 }
 
-function ScoreboardCard({ entry }) {
-  const seasonInfo = entry.config.num_seasons === null
-    ? `Season ${entry.state.current_season} (Unlimited)`
-    : `Season ${entry.state.current_season} of ${entry.config.num_seasons}`;
+function ScoreboardCard({ entry, navigate }) {
   const badgeStyle = getBadgeStyle(entry.completionStatus);
+  const summary = computeLeagueSummary(entry);
+
+  let row2Text = null;
+  if (entry.completionStatus === 'completed' && summary) {
+    const seasonsLabel = summary.seasonCount === 1 ? '1 season' : `${summary.seasonCount} seasons`;
+    const matchesLabel = summary.matchCount === 1 ? '1 match' : `${summary.matchCount} matches`;
+    row2Text = `Winner: ${summary.winner} • ${seasonsLabel} • ${matchesLabel}`;
+  } else if (entry.completionStatus === 'in_progress' && summary) {
+    const seasonText = summary.totalSeasons === null
+      ? `Season ${summary.currentSeason} (Unlimited)`
+      : `Season ${summary.currentSeason} of ${summary.totalSeasons}`;
+    if (summary.currentLeader) {
+      const matchesLabel = summary.currentSeasonMatches === 1 ? '1 match' : `${summary.currentSeasonMatches} matches`;
+      row2Text = `${seasonText} • Leading: ${summary.currentLeader} • ${matchesLabel} this season`;
+    } else {
+      row2Text = seasonText;
+    }
+  }
 
   return (
     <div
+      onClick={() => navigate(`/league/${entry.id}`)}
       style={{
         background: 'var(--color-surface)',
         border: '1.5px solid var(--color-border)',
@@ -49,6 +66,9 @@ function ScoreboardCard({ entry }) {
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -66,9 +86,11 @@ function ScoreboardCard({ entry }) {
           {getBadgeLabel(entry.completionStatus)}
         </span>
       </div>
-      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-        {seasonInfo}
-      </span>
+      {row2Text && (
+        <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+          {row2Text}
+        </span>
+      )}
     </div>
   );
 }
@@ -192,7 +214,7 @@ export default function Scoreboard() {
         )}
 
         {entries !== null && entries.length > 0 && entries.map((entry) => (
-          <ScoreboardCard key={entry.id} entry={entry} />
+          <ScoreboardCard key={entry.id} entry={entry} navigate={navigate} />
         ))}
       </div>
     </div>

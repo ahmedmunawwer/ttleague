@@ -102,7 +102,7 @@ function getBadgeLabel(status) {
   return 'Completed';
 }
 
-export default function LeagueInfoModal({ league, onClose }) {
+export default function LeagueInfoModal({ league, onClose, enableEditMode, navigate }) {
   const [action, setAction] = useState(null);
   const [newName, setNewName] = useState(league.name);
   const [error, setError] = useState(null);
@@ -194,6 +194,17 @@ export default function LeagueInfoModal({ league, onClose }) {
                 🗑️
               </button>
             </div>
+            {enableEditMode && (
+              <button
+                style={BTN_PRIMARY}
+                onClick={() => {
+                  onClose();
+                  navigate(`/league/${league.id}?mode=edit`);
+                }}
+              >
+                Edit Mode
+              </button>
+            )}
             <button style={BTN_SECONDARY} onClick={onClose}>
               Cancel
             </button>

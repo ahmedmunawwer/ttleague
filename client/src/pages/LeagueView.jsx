@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
 import Counter from '../components/Counter.jsx';
@@ -15,6 +15,7 @@ function computeWinnerScore(loserScore, gamePoint) {
 export default function LeagueView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [league, setLeague] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('fixtures');
@@ -148,7 +149,9 @@ export default function LeagueView() {
   const seasonComplete = league.state.fixtures.length > 0 && league.state.fixtures.every(f => f.scoreA !== null && f.scoreB !== null);
   const showStartNext = seasonComplete && (league.config.num_seasons === null || league.state.current_season < league.config.num_seasons);
   const showEndLeague = seasonComplete && league.status === 'in_progress';
-  const isReadOnly = league.status !== 'in_progress';
+  const isEditMode = searchParams.get('mode') === 'edit';
+  const isCompletedLeague = league.status === 'completed';
+  const isReadOnly = league.status !== 'in_progress' || !isEditMode;
 
   const handleSeasonAction = async (action) => {
     const event = action === 'next' ? 'complete_season' : 'end_league';
@@ -233,7 +236,7 @@ export default function LeagueView() {
         {seasonInfo}
       </div>
 
-      {isReadOnly && (
+      {isCompletedLeague && (
         <div style={{ padding: '8px 16px', background: 'var(--color-badge-completed-bg)', color: 'var(--color-badge-completed-text)', borderRadius: '8px', textAlign: 'center', margin: '8px 0', fontWeight: 600, fontSize: '0.9rem' }}>
           League Completed
         </div>
@@ -526,7 +529,7 @@ export default function LeagueView() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {seasonComplete && league.status === 'in_progress' && (
+                {seasonComplete && league.status === 'in_progress' && !isReadOnly && (
                   <div style={{
                     padding: '16px',
                     background: 'var(--color-surface)',

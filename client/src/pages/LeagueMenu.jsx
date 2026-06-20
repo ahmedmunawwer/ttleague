@@ -190,7 +190,7 @@ export default function LeagueMenu() {
       </div>
 
       {showCreate && <NewLeagueWizard onClose={() => setShowCreate(false)} />}
-      {selectedLeague && <LeagueInfoModal league={selectedLeague} onClose={() => setSelectedLeague(null)} />}
+      {selectedLeague && <LeagueInfoModal league={selectedLeague} onClose={() => setSelectedLeague(null)} enableEditMode={true} navigate={navigate} />}
     </div>
   );
 }
