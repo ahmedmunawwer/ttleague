@@ -5,7 +5,7 @@ function Home() {
   const navigate = useNavigate();
   return (
     <div style={{
-      height: '100vh',
+      height: 'calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
       background: 'var(--color-background)',
       display: 'flex',
       flexDirection: 'column',
@@ -42,12 +42,22 @@ function Home() {
         WebkitTapHighlightColor: 'transparent',
         userSelect: 'none',
       }} onClick={() => navigate('/scoreboard')}>
-        <span role="img" aria-label="Scoreboard" style={{
-          fontSize: '28vh',
-          lineHeight: 1,
+        <div style={{
+          width: '28vh',
+          height: '28vh',
+          borderRadius: '50%',
+          background: 'var(--color-trophy-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          🏆
-        </span>
+          <span role="img" aria-label="Scoreboard" style={{
+            fontSize: '18vh',
+            lineHeight: 1,
+          }}>
+            🏆
+          </span>
+        </div>
       </div>
     </div>
   );
