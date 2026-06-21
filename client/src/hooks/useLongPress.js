@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 
-const LONG_PRESS_MS = 600;
+const LONG_PRESS_MS = 250;
 
 export default function useLongPress(callback) {
   const timerRef = useRef(null);

@@ -9,6 +9,7 @@ import SeasonActionModal from '../components/SeasonActionModal.jsx';
 import SeasonBreakdownModal from '../components/SeasonBreakdownModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import PlayerStatsModal from '../components/PlayerStatsModal.jsx';
 
 function computeWinnerScore(loserScore, gamePoint) {
   return Math.max(gamePoint + 1, loserScore + 2);
@@ -32,9 +33,11 @@ export default function LeagueView() {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [savedFlashId, setSavedFlashId] = useState(null);
+  const [statsPlayer, setStatsPlayer] = useState(null);
 
   const debounceTimerRef = useRef(null);
   const savedFlashTimerRef = useRef(null);
+  const longPressTimerRef = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -43,6 +46,9 @@ export default function LeagueView() {
       }
       if (savedFlashTimerRef.current) {
         clearTimeout(savedFlashTimerRef.current);
+      }
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
       }
     };
   }, []);
@@ -79,6 +85,17 @@ export default function LeagueView() {
       socket.off('league_updated', handleLeagueUpdated);
     };
   }, []);
+
+  function startLongPress(playerName) {
+    longPressTimerRef.current = setTimeout(() => setStatsPlayer(playerName), 250);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
 
   async function handleGenerateFixtures() {
     setGenerating(true);
@@ -737,7 +754,23 @@ export default function LeagueView() {
                             <span>{row.rank}</span>
                           </span>
                           <span style={{ flex: 1, textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {row.player}
+                            <span
+                              style={{
+                                cursor: 'pointer',
+                                WebkitUserSelect: 'none',
+                                WebkitTouchCallout: 'none',
+                                userSelect: 'none',
+                              }}
+                              onMouseDown={() => startLongPress(row.player)}
+                              onMouseUp={cancelLongPress}
+                              onMouseLeave={cancelLongPress}
+                              onTouchStart={() => startLongPress(row.player)}
+                              onTouchEnd={cancelLongPress}
+                              onTouchMove={cancelLongPress}
+                              onContextMenu={(e) => e.preventDefault()}
+                            >
+                              {row.player}
+                            </span>
                             {row.tieGroup !== null && row.tieGroup.length > 1 && (
                               <span
                                 onClick={() => setTiebreakerGroup({ players: row.tieGroup, pointsLevel: row.leaguePoints })}
@@ -839,6 +872,13 @@ export default function LeagueView() {
             setShowSettings(false);
           }}
           onCancel={() => setShowSettings(false)}
+        />
+      )}
+
+      {statsPlayer && (
+        <PlayerStatsModal
+          playerName={statsPlayer}
+          onClose={() => setStatsPlayer(null)}
         />
       )}
     </div>
