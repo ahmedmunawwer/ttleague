@@ -8,6 +8,7 @@ import TiebreakerModal from '../components/TiebreakerModal.jsx';
 import SeasonActionModal from '../components/SeasonActionModal.jsx';
 import SeasonBreakdownModal from '../components/SeasonBreakdownModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 function computeWinnerScore(loserScore, gamePoint) {
   return Math.max(gamePoint + 1, loserScore + 2);
@@ -577,10 +578,12 @@ export default function LeagueView() {
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             {!league.state.fixtures || league.state.fixtures.every(f => f.scoreA === null || f.scoreB === null) ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                <span style={{ color: 'var(--color-text-secondary)', fontSize: '1rem' }}>
-                  No matches played yet
-                </span>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <EmptyState
+                  icon="⏳"
+                  title="No matches played yet"
+                  hint="Score matches in the Fixtures tab to see standings"
+                />
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>

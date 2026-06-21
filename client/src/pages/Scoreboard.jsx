@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import socket from '../socket.js';
 import socketEmit from '../socketEmit.js';
 import { computeLeagueSummary, computeAllPlayersStats } from '../utils/leagueAggregations.js';
+import EmptyState from '../components/EmptyState.jsx';
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -297,9 +298,19 @@ export default function Scoreboard() {
         )}
 
         {entries !== null && entries.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: '40px', fontSize: '1rem' }}>
-            {scoreboardView === 'leagues' ? EMPTY_MESSAGES[activeTab] : 'No players yet'}
-          </div>
+          scoreboardView === 'leagues' ? (
+            <EmptyState
+              icon={activeTab === 'in_progress' ? '🎾' : activeTab === 'completed' ? '🥇' : activeTab === 'all' ? '🏆' : '🗑️'}
+              title={EMPTY_MESSAGES[activeTab]}
+              hint={activeTab === 'in_progress' ? 'Create a new league to get started' : activeTab === 'completed' ? 'Finished leagues will appear here' : null}
+            />
+          ) : (
+            <EmptyState
+              icon="👥"
+              title="No players yet"
+              hint="Create a league to see player stats"
+            />
+          )
         )}
 
         {scoreboardView === 'leagues' && entries !== null && entries.length > 0 && entries.map((entry) => (

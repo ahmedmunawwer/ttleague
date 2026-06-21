@@ -5,6 +5,7 @@ import socketEmit from '../socketEmit.js';
 import useLongPress from '../hooks/useLongPress.js';
 import NewLeagueWizard from '../components/NewLeagueWizard.jsx';
 import LeagueInfoModal from '../components/LeagueInfoModal.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 function getBadgeStyle(status) {
   if (status === 'in_progress') {
@@ -182,9 +183,11 @@ export default function LeagueMenu() {
         )}
 
         {leagues !== null && leagues.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: '40px', fontSize: '1rem' }}>
-            No leagues yet. Tap + to create one.
-          </div>
+          <EmptyState
+            icon="🏓"
+            title="No leagues yet"
+            hint="Tap + to create your first league"
+          />
         )}
 
         {leagues !== null && leagues.length > 0 && leagues.map((league) => (
