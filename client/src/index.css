@@ -13,3 +13,15 @@ body {
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Tabular numerals for scores/stats */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Heading hierarchy */
+h1, h2, h3 {
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
