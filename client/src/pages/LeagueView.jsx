@@ -688,19 +688,23 @@ export default function LeagueView() {
                         <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>D</span>
                       </div>
 
-                      {activeStandings.map((row) => (
+                      {activeStandings.map((row, index) => (
                         <div key={row.player} style={{
                           display: 'flex',
                           gap: '8px',
                           padding: '12px 10px',
                           borderBottom: '1px solid var(--color-border)',
-                          background: 'var(--color-surface)',
+                          background: index % 2 === 1 ? 'var(--color-surface-subtle)' : 'var(--color-surface)',
                           fontSize: '0.95rem',
                           color: 'var(--color-text-primary)',
                           alignItems: 'center',
+                          minHeight: '48px',
                         }}>
-                          <span style={{ width: '30px', textAlign: 'center', fontWeight: 700 }}>
-                            {row.rank}
+                          <span style={{ width: '55px', display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '8px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            <span style={{ width: '20px', display: 'inline-block', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                              {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : '•'}
+                            </span>
+                            <span>{row.rank}</span>
                           </span>
                           <span style={{ flex: 1, textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             {row.player}
@@ -718,25 +722,25 @@ export default function LeagueView() {
                               </span>
                             )}
                           </span>
-                          <span style={{ width: '25px', textAlign: 'center' }}>
+                          <span className="tabular" style={{ width: '25px', textAlign: 'center' }}>
                             {row.matchesPlayed}
                           </span>
-                          <span style={{ width: '25px', textAlign: 'center' }}>
+                          <span className="tabular" style={{ width: '25px', textAlign: 'center' }}>
                             {row.wins}
                           </span>
-                          <span style={{ width: '25px', textAlign: 'center' }}>
+                          <span className="tabular" style={{ width: '25px', textAlign: 'center' }}>
                             {row.losses}
                           </span>
-                          <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px', fontWeight: 700 }}>
+                          <span className="tabular" style={{ width: '35px', textAlign: 'right', paddingRight: '10px', fontWeight: 700 }}>
                             {row.leaguePoints}
                           </span>
-                          <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
+                          <span className="tabular" style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
                             {row.pointsFor}
                           </span>
-                          <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
+                          <span className="tabular" style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
                             {row.pointsAgainst}
                           </span>
-                          <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>
+                          <span className="tabular" style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>
                             {row.pointDiff > 0 ? '+' + row.pointDiff : row.pointDiff}
                           </span>
                         </div>

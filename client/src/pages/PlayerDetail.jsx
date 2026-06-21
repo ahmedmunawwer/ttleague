@@ -222,18 +222,22 @@ export default function PlayerDetail() {
 
         <div style={SUMMARY_GRID_STYLE}>
           <div style={STAT_CELL_STYLE}>
+            <span style={{ fontSize: '1.2rem' }}>🎾</span>
             <span style={STAT_LABEL_STYLE}>Leagues</span>
             <span style={STAT_VALUE_STYLE}>{summary.leaguesPlayed}</span>
           </div>
           <div style={STAT_CELL_STYLE}>
+            <span style={{ fontSize: '1.2rem' }}>🏆</span>
             <span style={STAT_LABEL_STYLE}>Won</span>
             <span style={STAT_VALUE_STYLE}>{summary.leaguesWon}</span>
           </div>
           <div style={STAT_CELL_STYLE}>
+            <span style={{ fontSize: '1.2rem' }}>⚖️</span>
             <span style={STAT_LABEL_STYLE}>Record</span>
             <span style={STAT_VALUE_STYLE}>{summary.wins}-{summary.losses}</span>
           </div>
           <div style={STAT_CELL_STYLE}>
+            <span style={{ fontSize: '1.2rem' }}>🎯</span>
             <span style={STAT_LABEL_STYLE}>Points</span>
             <span style={STAT_VALUE_STYLE}>{summary.pointsFor}-{summary.pointsAgainst}</span>
           </div>
@@ -266,11 +270,44 @@ export default function PlayerDetail() {
           <div>
             <h2 style={SECTION_HEADER_STYLE}>Head-to-Head</h2>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {Object.keys(h2h).sort().map((opponent) => (
-                <div key={opponent} style={H2H_ROW_STYLE}>
-                  vs {opponent}: {h2h[opponent].wins}-{h2h[opponent].losses}
-                </div>
-              ))}
+              {Object.keys(h2h).sort().map((opponent) => {
+                const wins = h2h[opponent].wins;
+                const losses = h2h[opponent].losses;
+                const total = h2h[opponent].matches;
+                const winPercent = total > 0 ? (wins / total) * 100 : 0;
+
+                return (
+                  <div key={opponent} style={H2H_ROW_STYLE}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{ minWidth: '160px', flex: '0 0 160px' }}>
+                        vs {opponent}: {wins}-{losses}
+                      </span>
+                      {total > 0 && (
+                        <div style={{
+                          flex: '1',
+                          maxWidth: '120px',
+                          height: '6px',
+                          background: 'var(--color-divider)',
+                          borderRadius: '3px',
+                          overflow: 'hidden',
+                          display: 'flex',
+                        }}>
+                          <div style={{
+                            width: `${winPercent}%`,
+                            background: 'var(--color-win)',
+                            height: '100%',
+                          }} />
+                          <div style={{
+                            width: `${100 - winPercent}%`,
+                            background: 'var(--color-loss)',
+                            height: '100%',
+                          }} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
