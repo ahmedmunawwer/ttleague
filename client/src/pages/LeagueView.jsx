@@ -7,6 +7,7 @@ import { computeStandings } from '../utils/standings.js';
 import TiebreakerModal from '../components/TiebreakerModal.jsx';
 import SeasonActionModal from '../components/SeasonActionModal.jsx';
 import SeasonBreakdownModal from '../components/SeasonBreakdownModal.jsx';
+import SettingsModal from '../components/SettingsModal.jsx';
 
 function computeWinnerScore(loserScore, gamePoint) {
   return Math.max(gamePoint + 1, loserScore + 2);
@@ -28,6 +29,7 @@ export default function LeagueView() {
   const [seasonActionModal, setSeasonActionModal] = useState(null);
   const [standingsView, setStandingsView] = useState('current');
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const debounceTimerRef = useRef(null);
 
@@ -223,6 +225,26 @@ export default function LeagueView() {
         >
           ←
         </button>
+        {!isReadOnly && (
+          <button
+            onClick={() => setShowSettings(true)}
+            style={{
+              position: 'absolute',
+              right: '20px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              color: 'var(--color-text-primary)',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              padding: '4px',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            ⚙️
+          </button>
+        )}
         <h1 style={{
           textAlign: 'center',
           margin: 0,
@@ -300,11 +322,15 @@ export default function LeagueView() {
                   {fixtureError}
                 </div>
               )}
-              {isReadOnly ? (
+              {league.status === 'completed' && !league.state.fixtures.length ? (
                 <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                   League completed — no fixtures were generated
                 </span>
-              ) : (
+              ) : isReadOnly && !league.state.fixtures.length ? (
+                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                  No fixtures yet — switch to Edit Mode to generate
+                </span>
+              ) : !isReadOnly ? (
                 <>
                   <Counter label="Number of tables" value={numTables} onChange={setNumTables} min={1} max={6} />
                   <button
@@ -326,7 +352,7 @@ export default function LeagueView() {
                     {generating ? 'Generating...' : 'Generate Fixtures'}
                   </button>
                 </>
-              )}
+              ) : null}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -768,6 +794,17 @@ export default function LeagueView() {
           league={seasonActionModal.league}
           onConfirm={() => handleSeasonAction(seasonActionModal.action)}
           onCancel={() => setSeasonActionModal(null)}
+        />
+      )}
+
+      {showSettings && league && (
+        <SettingsModal
+          league={league}
+          onSave={(updated) => {
+            setLeague(updated);
+            setShowSettings(false);
+          }}
+          onCancel={() => setShowSettings(false)}
         />
       )}
     </div>

@@ -138,4 +138,24 @@ function validateSeasonComplete(league) {
   return { ok: true };
 }
 
-module.exports = { isValidUuid, validateName, validateInt, validateStatus, validateLeagueConfig, validateMatchScore, validateSeasonComplete };
+function validateNumTablesChange(newNumTables, league) {
+  if (!Number.isInteger(newNumTables) || newNumTables < 1 || newNumTables > 6) {
+    return { ok: false, error: 'Number of tables must be an integer between 1 and 6' };
+  }
+
+  if (!league || !league.state) {
+    return { ok: false, error: 'Invalid league' };
+  }
+
+  if (league.status !== 'in_progress') {
+    return { ok: false, error: 'League must be in progress to change tables' };
+  }
+
+  if (!Array.isArray(league.state.fixtures) || league.state.fixtures.length === 0) {
+    return { ok: false, error: 'Cannot change tables — no fixtures generated' };
+  }
+
+  return { ok: true };
+}
+
+module.exports = { isValidUuid, validateName, validateInt, validateStatus, validateLeagueConfig, validateMatchScore, validateSeasonComplete, validateNumTablesChange };

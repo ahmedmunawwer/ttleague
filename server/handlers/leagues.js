@@ -1,7 +1,7 @@
 'use strict';
 
 const supabase = require('../supabase');
-const { isValidUuid, validateName, validateStatus, validateLeagueConfig } = require('../validate');
+const { isValidUuid, validateName, validateStatus, validateLeagueConfig, validateNumTablesChange } = require('../validate');
 const scoreboardManager = require('../scoreboardManager');
 
 function registerLeagueHandlers(io, socket) {
@@ -171,6 +171,92 @@ function registerLeagueHandlers(io, socket) {
     } catch (err) {
       console.error('[delete_league]', err);
       cb({ ok: false, error: 'Failed to delete league' });
+    }
+  });
+
+  socket.on('change_num_tables', async (leagueId, newNumTables, cb) => {
+    try {
+      if (!isValidUuid(leagueId)) return cb({ ok: false, error: 'Invalid ID format' });
+
+      const { data: league, error: fetchErr } = await supabase
+        .from('leagues')
+        .select('*')
+        .eq('id', leagueId)
+        .single();
+
+      if (fetchErr || !league) {
+        return cb({ ok: false, error: 'League not found' });
+      }
+
+      const v = validateNumTablesChange(newNumTables, league);
+      if (!v.ok) return cb({ ok: false, error: v.error });
+
+      // Build score lookup: playerA|playerB → { scoreA, scoreB }
+      const scoresByPair = {};
+      for (const f of league.state.fixtures) {
+        const key = `${f.playerA}|${f.playerB}`;
+        scoresByPair[key] = { scoreA: f.scoreA, scoreB: f.scoreB };
+      }
+
+      // Extract all pairs from current fixtures
+      const allPairs = league.state.fixtures.map(f => [f.playerA, f.playerB]);
+
+      // Re-bin ALL fixtures using buildSchedule with new table count
+      const { buildSchedule } = require('../fixtureGenerator');
+      const newSchedule = buildSchedule([allPairs], newNumTables);
+
+      // Convert schedule back to fixture objects, preserving scores
+      const crypto = require('crypto');
+      const newFixtures = [];
+      newSchedule.forEach((slot, slotIdx) => {
+        slot.forEach((match, orderIdx) => {
+          const key = `${match[0]}|${match[1]}`;
+          const oldScore = scoresByPair[key] || { scoreA: null, scoreB: null };
+          newFixtures.push({
+            id: crypto.randomUUID(),
+            slot: slotIdx + 1,
+            playerA: match[0],
+            playerB: match[1],
+            scoreA: oldScore.scoreA,
+            scoreB: oldScore.scoreB,
+            table: orderIdx + 1,
+            order: orderIdx + 1,
+          });
+        });
+      });
+
+      // Update state with new num_tables and re-binned fixtures
+      const newState = {
+        ...league.state,
+        num_tables: newNumTables,
+        fixtures: newFixtures,
+      };
+
+      // Persist to database
+      const { data: updated, error: updateErr } = await supabase
+        .from('leagues')
+        .update({ state: newState })
+        .eq('id', leagueId)
+        .select()
+        .single();
+
+      if (updateErr) {
+        console.error('[change_num_tables] DB update failed:', updateErr);
+        return cb({ ok: false, error: 'DB update failed' });
+      }
+
+      // Sync scoreboard
+      try { await scoreboardManager.writeEntry(leagueId, updated); }
+      catch (sbErr) { console.error('[change_num_tables] scoreboard sync failed:', sbErr.message); }
+
+      // Broadcast changes
+      io.emit('scoreboard_changed');
+      io.emit('leagues_list_changed');
+
+      cb({ ok: true, league: updated });
+    } catch (err) {
+      console.error('[change_num_tables]', err);
+      cb({ ok: false, error: err.message });
     }
   });
 
