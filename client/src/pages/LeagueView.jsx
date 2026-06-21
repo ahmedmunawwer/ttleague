@@ -193,6 +193,31 @@ export default function LeagueView() {
   };
 
   async function performAutoSave(match, loserScoreStr, loserSide) {
+    // Handle score deletion: empty string means clear scores
+    if (loserScoreStr === '') {
+      if (match.scoreA === null && match.scoreB === null) return; // already cleared
+      try {
+        const ack = await socketEmit('update_match_score', id, match.id, null, null);
+        if (ack.ok) {
+          setLeague(ack.league);
+          setScoreErrors((prev) => {
+            const next = { ...prev };
+            delete next[match.id];
+            return next;
+          });
+          if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current);
+          setSavedFlashId(match.id);
+          savedFlashTimerRef.current = setTimeout(() => setSavedFlashId(null), 2000);
+        } else {
+          setScoreErrors((prev) => ({ ...prev, [match.id]: ack.error }));
+        }
+      } catch (err) {
+        setScoreErrors((prev) => ({ ...prev, [match.id]: 'Network error' }));
+      }
+      return;
+    }
+
+    // Handle score entry: must be valid number
     const loserScoreNum = /^\d+$/.test(loserScoreStr) ? parseInt(loserScoreStr, 10) : null;
     if (loserScoreNum === null) return;
 
