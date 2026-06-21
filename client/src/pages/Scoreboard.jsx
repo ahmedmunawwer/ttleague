@@ -276,8 +276,8 @@ export default function Scoreboard() {
 
       <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {entries === null && !fetchError && (
-          <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: '40px', fontSize: '1rem' }}>
-            Loading...
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
+            <div className="spinner" />
           </div>
         )}
 

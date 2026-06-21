@@ -185,7 +185,11 @@ export default function PlayerDetail() {
   }, []);
 
   if (entries === null && !fetchError) {
-    return <div style={LOADING_STYLE}>Loading...</div>;
+    return (
+      <div style={LOADING_STYLE}>
+        <div className="spinner" />
+      </div>
+    );
   }
 
   if (fetchError) {

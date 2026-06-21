@@ -30,13 +30,18 @@ export default function LeagueView() {
   const [standingsView, setStandingsView] = useState('current');
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [savedFlashId, setSavedFlashId] = useState(null);
 
   const debounceTimerRef = useRef(null);
+  const savedFlashTimerRef = useRef(null);
 
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+      }
+      if (savedFlashTimerRef.current) {
+        clearTimeout(savedFlashTimerRef.current);
       }
     };
   }, []);
@@ -190,6 +195,9 @@ export default function LeagueView() {
           delete next[match.id];
           return next;
         });
+        if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current);
+        setSavedFlashId(match.id);
+        savedFlashTimerRef.current = setTimeout(() => setSavedFlashId(null), 2000);
       } else {
         setScoreErrors((prev) => ({ ...prev, [match.id]: ack.error }));
       }
@@ -200,6 +208,25 @@ export default function LeagueView() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background)', display: 'flex', flexDirection: 'column' }}>
+      {savedFlashId && (
+        <div style={{
+          position: 'fixed',
+          top: '70px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--color-win-bg)',
+          color: 'var(--color-win)',
+          padding: '8px 16px',
+          borderRadius: '999px',
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          zIndex: 50,
+          pointerEvents: 'none',
+        }} className="toast-saved">
+          ✓ Saved
+        </div>
+      )}
       <div style={{
         position: 'relative',
         padding: '16px 20px',

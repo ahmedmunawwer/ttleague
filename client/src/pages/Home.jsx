@@ -11,15 +11,19 @@ function Home() {
       flexDirection: 'column',
     }}>
       {/* Top half: Paddle */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-      }} onClick={() => navigate('/league')}>
+      <div
+        className="fade-up"
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          WebkitTapHighlightColor: 'transparent',
+          userSelect: 'none',
+        }}
+        onClick={() => navigate('/league')}
+      >
         <img
           src="/paddle.png"
           alt="League"
@@ -33,15 +37,19 @@ function Home() {
       </div>
 
       {/* Bottom half: Trophy */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-      }} onClick={() => navigate('/scoreboard')}>
+      <div
+        className="fade-up-delayed"
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          WebkitTapHighlightColor: 'transparent',
+          userSelect: 'none',
+        }}
+        onClick={() => navigate('/scoreboard')}
+      >
         <div style={{
           width: '28vh',
           height: '28vh',
