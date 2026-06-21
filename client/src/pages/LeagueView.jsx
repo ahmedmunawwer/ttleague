@@ -713,47 +713,102 @@ export default function LeagueView() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', overflowX: 'auto' }}>
-                      <div style={{
-                        display: 'flex',
-                        gap: '8px',
-                        padding: '12px 10px',
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontSize: '0.95rem',
+                  }}>
+                    <thead>
+                      <tr style={{
                         borderBottom: '1.5px solid var(--color-border)',
-                        background: 'var(--color-surface)',
                         fontWeight: 700,
                         fontSize: '0.85rem',
                         color: 'var(--color-text-secondary)',
+                        background: 'var(--color-surface)',
                       }}>
-                        <span style={{ width: '30px', textAlign: 'center' }}>Rank</span>
-                        <span style={{ flex: 1, textAlign: 'left' }}>Player</span>
-                        <span style={{ width: '25px', textAlign: 'center' }}>P</span>
-                        <span style={{ width: '25px', textAlign: 'center' }}>W</span>
-                        <span style={{ width: '25px', textAlign: 'center' }}>L</span>
-                        <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>Pts</span>
-                        <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>PF</span>
-                        <span style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>PA</span>
-                        <span style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>D</span>
-                      </div>
-
+                        <th style={{ padding: '12px 8px', width: '40px', textAlign: 'center' }}>Rank</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left' }}>Player</th>
+                        <th style={{ padding: '12px 8px', width: '36px', textAlign: 'center' }}>P</th>
+                        <th style={{ padding: '12px 8px', width: '36px', textAlign: 'center' }}>W</th>
+                        <th style={{ padding: '12px 8px', width: '36px', textAlign: 'center' }}>L</th>
+                        <th style={{ padding: '12px 8px', width: '40px', textAlign: 'center' }}>Pts</th>
+                        <th style={{ padding: '12px 8px', width: '40px', textAlign: 'center' }}>PF</th>
+                        <th style={{ padding: '12px 8px', width: '40px', textAlign: 'center' }}>PA</th>
+                        <th style={{ padding: '12px 8px', width: '40px', textAlign: 'center' }}>D</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {activeStandings.map((row, index) => (
-                        <div key={row.player} style={{
-                          display: 'flex',
-                          gap: '8px',
-                          padding: '12px 10px',
+                        <tr key={row.player} style={{
                           borderBottom: '1px solid var(--color-border)',
                           background: index % 2 === 1 ? 'var(--color-surface-subtle)' : 'var(--color-surface)',
-                          fontSize: '0.95rem',
                           color: 'var(--color-text-primary)',
-                          alignItems: 'center',
-                          minHeight: '48px',
                         }}>
-                          <span style={{ width: '55px', display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '8px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: '20px', display: 'inline-block', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                              {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : '•'}
-                            </span>
-                            <span>{row.rank}</span>
-                          </span>
-                          <span style={{ flex: 1, textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <td style={{ padding: '12px 8px', textAlign: 'center', minHeight: '48px' }}>
+                            {(() => {
+                              const rankContent = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : row.rank;
+                              const isTied = row.tieGroup !== null && row.tieGroup.length > 1;
+                              const isUnresolved = row.unresolvedTie;
+
+                              if (isUnresolved) {
+                                // Unresolved tie: grey background + black ring
+                                return (
+                                  <span
+                                    onClick={() => setTiebreakerGroup({ players: row.tieGroup, pointsLevel: row.leaguePoints })}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '32px',
+                                      height: '32px',
+                                      borderRadius: '50%',
+                                      background: '#e0e0e0',
+                                      boxShadow: '0 0 0 2px #333',
+                                      cursor: 'pointer',
+                                      fontSize: row.rank <= 3 ? '1.2rem' : '1rem',
+                                      fontWeight: 700,
+                                      transition: 'transform 0.15s ease',
+                                      WebkitTapHighlightColor: 'transparent',
+                                    }}
+                                  >
+                                    {rankContent}
+                                  </span>
+                                );
+                              } else if (isTied) {
+                                // Resolved tie: red background + red ring
+                                return (
+                                  <span
+                                    onClick={() => setTiebreakerGroup({ players: row.tieGroup, pointsLevel: row.leaguePoints })}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '32px',
+                                      height: '32px',
+                                      borderRadius: '50%',
+                                      background: 'var(--color-primary-bg)',
+                                      boxShadow: '0 0 0 2px var(--color-primary)',
+                                      cursor: 'pointer',
+                                      fontSize: row.rank <= 3 ? '1.2rem' : '1rem',
+                                      fontWeight: 700,
+                                      transition: 'transform 0.15s ease',
+                                      WebkitTapHighlightColor: 'transparent',
+                                    }}
+                                  >
+                                    {rankContent}
+                                  </span>
+                                );
+                              }
+                              // Not tied: plain rank
+                              return (
+                                <span style={{ fontSize: row.rank <= 3 ? '1.4rem' : '1rem', fontWeight: 700 }}>
+                                  {rankContent}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td style={{ padding: '12px 8px' }}>
                             <span
                               style={{
                                 cursor: 'pointer',
@@ -771,43 +826,18 @@ export default function LeagueView() {
                             >
                               {row.player}
                             </span>
-                            {row.tieGroup !== null && row.tieGroup.length > 1 && (
-                              <span
-                                onClick={() => setTiebreakerGroup({ players: row.tieGroup, pointsLevel: row.leaguePoints })}
-                                style={{
-                                  cursor: 'pointer',
-                                  fontWeight: 600,
-                                  color: 'var(--color-primary)',
-                                  fontSize: '0.85rem',
-                                }}
-                              >
-                                ⓘ
-                              </span>
-                            )}
-                          </span>
-                          <span className="tabular" style={{ width: '25px', textAlign: 'center' }}>
-                            {row.matchesPlayed}
-                          </span>
-                          <span className="tabular" style={{ width: '25px', textAlign: 'center' }}>
-                            {row.wins}
-                          </span>
-                          <span className="tabular" style={{ width: '25px', textAlign: 'center' }}>
-                            {row.losses}
-                          </span>
-                          <span className="tabular" style={{ width: '35px', textAlign: 'right', paddingRight: '10px', fontWeight: 700 }}>
-                            {row.leaguePoints}
-                          </span>
-                          <span className="tabular" style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
-                            {row.pointsFor}
-                          </span>
-                          <span className="tabular" style={{ width: '30px', textAlign: 'right', paddingRight: '8px' }}>
-                            {row.pointsAgainst}
-                          </span>
-                          <span className="tabular" style={{ width: '35px', textAlign: 'right', paddingRight: '10px' }}>
-                            {row.pointDiff > 0 ? '+' + row.pointDiff : row.pointDiff}
-                          </span>
-                        </div>
+                          </td>
+                          <td className="tabular" style={{ padding: '12px 8px', textAlign: 'center' }}>{row.matchesPlayed}</td>
+                          <td className="tabular" style={{ padding: '12px 8px', textAlign: 'center' }}>{row.wins}</td>
+                          <td className="tabular" style={{ padding: '12px 8px', textAlign: 'center' }}>{row.losses}</td>
+                          <td className="tabular" style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 700 }}>{row.leaguePoints}</td>
+                          <td className="tabular" style={{ padding: '12px 8px', textAlign: 'center' }}>{row.pointsFor}</td>
+                          <td className="tabular" style={{ padding: '12px 8px', textAlign: 'center' }}>{row.pointsAgainst}</td>
+                          <td className="tabular" style={{ padding: '12px 8px', textAlign: 'center' }}>{row.pointDiff > 0 ? '+' + row.pointDiff : row.pointDiff}</td>
+                        </tr>
                       ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 {standingsView === 'alltime' && league.history && league.history.length > 0 && (

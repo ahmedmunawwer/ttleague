@@ -128,6 +128,7 @@ function computeStandings(fixtures, players, pointsPerWin, gamePoint = 10) {
     pointDiff: stat.pointDiff,
     leaguePoints: stat.leaguePoints,
     tieGroup: stat.tieGroup,
+    unresolvedTie: stat.unresolvedTie,
   }));
 
   return result;
@@ -142,26 +143,46 @@ function applyTiebreakers(standings, completed, allPlayers, gamePoint) {
   }
 
   const sorted = [];
+  let maxRank = 0;
   for (const pts of Object.keys(byPoints)
     .map(Number)
     .sort((a, b) => b - a)) {
     const group = byPoints[pts];
+    let baseRank = maxRank + 1;
     if (group.length === 1) {
-      group[0].rank = sorted.length + 1;
+      group[0].rank = baseRank;
       group[0].tieGroup = null;
       sorted.push(group[0]);
+      maxRank = baseRank;
     } else {
       const tiedNames = new Set(group.map(s => s.player));
       const resolved = resolveTieGroup(group, tiedNames, completed, 0, tiedNames, gamePoint);
-      let rank = sorted.length + 1;
-      for (const stat of resolved) {
-        stat.rank = rank;
-        if (stat.tieGroup.length === 1) {
-          stat.tieGroup = null;
+      let i = 0;
+      while (i < resolved.length) {
+        const stat = resolved[i];
+        stat.rank = baseRank;
+
+        if (stat.unresolvedTie) {
+          // Find consecutive players with unresolvedTie=true (still tied)
+          let j = i + 1;
+          while (j < resolved.length && resolved[j].unresolvedTie) {
+            resolved[j].rank = baseRank;
+            j++;
+          }
+          // Dense ranking: next available rank is baseRank + 1
+          for (let k = i; k < j; k++) {
+            sorted.push(resolved[k]);
+          }
+          baseRank += 1;
+          i = j;
+        } else {
+          // Unique player (resolved by some metric)
+          sorted.push(stat);
+          baseRank += 1;
+          i += 1;
         }
-        sorted.push(stat);
-        rank += 1;
       }
+      maxRank = baseRank - 1;
     }
   }
 
@@ -170,7 +191,11 @@ function applyTiebreakers(standings, completed, allPlayers, gamePoint) {
 
 function resolveTieGroup(group, tiedNames, completed, metricsApplied = 0, originalTiedNames = tiedNames, gamePoint) {
   if (metricsApplied >= 4) {
-    return group.map(s => ({ ...s, tieGroup: Array.from(originalTiedNames).sort() }));
+    return group.map(s => ({
+      ...s,
+      tieGroup: Array.from(originalTiedNames).sort(),
+      unresolvedTie: group.length > 1
+    }));
   }
 
   const byMetric = {};
@@ -202,6 +227,7 @@ function resolveTieGroup(group, tiedNames, completed, metricsApplied = 0, origin
     if (subGroup.length === 1) {
       const stat = subGroup[0];
       stat.tieGroup = Array.from(originalTiedNames).sort();
+      stat.unresolvedTie = false;
       sorted.push(stat);
     } else {
       const subTiedNames = new Set(subGroup.map(s => s.player));
